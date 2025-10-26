@@ -1,0 +1,58 @@
+{
+  "name": "ase-previewer-x",
+  "version": "1.0.0",
+  "description": "基于 Electron 实现的 Aseprite 文件预览工具。",
+  "main": "electron/main.js",
+  "scripts": {
+    "start-sev": "node server.js",
+    "dev": "node server.js",
+    "ele": "electron .",
+    "electron": "concurrently \"node server.js\" \"electron .\"",
+    "electron-dev": "concurrently \"node server.js\" \"electron . --dev\"",
+    "start": "node start.js",
+    "build": "electron-builder",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "aseprite",
+    "preview",
+    "electron",
+    "desktop"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ase-parser": "^0.0.18",
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  },
+  "build": {
+    "appId": "com.asepreviewer.app",
+    "productName": "Aseprite Previewer",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "public/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "public/favicon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "public/favicon.ico"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "public/favicon.ico"
+    }
+  },
+  "devDependencies": {
+    "electron": "^38.4.0",
+    "electron-builder": "24.13.3",
+    "concurrently": "^8.2.2"
+  }
+}

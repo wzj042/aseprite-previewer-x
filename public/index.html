@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ws: wss:;">
+    <title>Aseprite 文件预览器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 90%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .file-select-area {
+            border: 2px dashed #667eea;
+            border-radius: 20px;
+            padding: 60px 40px;
+            margin: 30px 0;
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .file-select-area:hover {
+            border-color: #5a6fd8;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e0ecff 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.15);
+        }
+
+        .file-select-area.drag-over {
+            border-color: #4c63d2;
+            background: linear-gradient(135deg, #e8f2ff 0%, #d6e8ff 100%);
+            transform: scale(1.02);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.25);
+        }
+
+        .file-select-area:active {
+            transform: translateY(0);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .file-select-area::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.05) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-20px, -20px) rotate(180deg); }
+        }
+
+        .file-select-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+            opacity: 0.8;
+            position: relative;
+            z-index: 1;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .file-select-hint {
+            font-size: 0.9em;
+            color: #718096;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .preview-area {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            min-height: 200px;
+            display: none;
+        }
+
+
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+
+        .rendered-preview {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .rendered-image {
+            max-width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: #fff;
+        }
+
+        .file-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            text-align: left;
+        }
+
+
+        .action-buttons {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .realtime-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #28a745;
+        }
+
+        .realtime-indicator.inactive {
+            color: #6c757d;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.inactive {
+            background: #6c757d;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Aseprite 文件预览器</h1>
+        
+        <div class="file-select-area" id="fileSelectArea">
+            <div class="file-select-icon">📁</div>
+            <div class="file-select-text">选择 .aseprite 文件进行预览</div>
+            <div class="file-select-hint">支持拖拽上传或点击选择</div>
+            <input type="file" class="file-input" id="fileInput" accept=".aseprite" style="display: none;">
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div style="margin-top: 10px;">正在解析文件...</div>
+        </div>
+
+        <div class="preview-area" id="previewArea">
+            <div class="file-info" id="fileInfo" style="display: none;">
+                <h3>文件信息</h3>
+                <div class="realtime-indicator" id="realtimeIndicator">
+                    <div class="status-dot"></div>
+                    <span>实时监控已启用</span>
+                </div>
+            </div>
+            
+            <div class="canvas-preview" id="canvasPreview" style="display: none;">
+                <h3>Canvas 渲染预览</h3>
+                <div class="canvas-container">
+                    <canvas id="aseCanvas" width="240" height="240" style="border: 2px solid #ddd; border-radius: 10px; background: #fff; cursor: grab;"></canvas>
+                </div>
+                <div class="frame-info" id="frameInfo" style="margin-top: 10px; font-size: 14px; color: #666;"></div>
+            </div>
+        </div>
+
+        <div class="status" id="status" style="display: none;"></div>
+    </div>
+
+    <!-- 引入必要的脚本 -->
+    <script src="pako.min.js"></script>
+    <script src="ase-reader.js"></script>
+    <script src="ase-canvas-renderer.js"></script>
+    <script src="unified-file-monitor.js"></script>
+
+    <script>
+        const fileSelectArea = document.getElementById('fileSelectArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewArea = document.getElementById('previewArea');
+        const loading = document.getElementById('loading');
+        const status = document.getElementById('status');
+        const fileInfo = document.getElementById('fileInfo');
+        const realtimeIndicator = document.getElementById('realtimeIndicator');
+        
+        // Canvas 相关元素
+        const canvasPreview = document.getElementById('canvasPreview');
+        const aseCanvas = document.getElementById('aseCanvas');
+        const frameInfo = document.getElementById('frameInfo');
+
+        let currentFileData = null;
+        let currentFilePath = null;
+        let aseRenderer = null;
+
+        // 检查是否在 Electron 环境中
+        const isElectron = typeof window.electronAPI !== 'undefined';
+        
+        // 调试模式开关
+        window.DEBUG_RENDERER = true; // 启用渲染器调试日志
+        window.DEBUG_FILE_WATCH = true; // 启用文件监控调试日志
+
+        // 初始化 Electron IPC 连接
+        function initElectronIPC() {
+            if (!isElectron) {
+                console.log('不在 Electron 环境中，无法使用 IPC 通信');
+                return;
+            }
+
+            console.log('Electron 环境已检测到');
+            showStatus('Electron 环境已就绪', 'success');
+
+            // 监听文件更新事件 - 优化版本
+            window.electronAPI.onFileUpdated((event, data) => {
+                console.log('📝 收到 Electron 文件更新通知:', data);
+                showStatus('文件已更新，正在刷新预览...', 'info');
+                
+                // 更新当前文件数据
+                currentFileData = data.data;
+                
+                // 如果使用 Canvas 渲染器，直接更新数据
+                if (aseRenderer && data.data) {
+                    console.log('🎨 更新 Canvas 渲染器数据');
+                    aseRenderer.updateFileData(data.data);
+                    updateFrameInfo();
+                    showStatus('Canvas 预览已更新', 'success');
+                } else {
+                    // 回退到自动渲染
+                    autoRenderFirstFrame();
+                }
+            });
+
+            // 监听强制刷新事件
+            window.electronAPI.onForceRefresh((event, data) => {
+                console.log('🔄 收到强制刷新通知:', data);
+                if (aseRenderer) {
+                    console.log('🎨 执行强制刷新');
+                    aseRenderer.forceRefresh();
+                    showStatus('强制刷新完成', 'success');
+                }
+            });
+
+            window.electronAPI.onFileUpdateError((event, data) => {
+                console.error('❌ 文件更新错误:', data);
+                showStatus(`文件更新失败: ${data.error}`, 'error');
+            });
+
+            window.electronAPI.onFileWatchError((event, data) => {
+                console.error('❌ 文件监控错误:', data);
+                showStatus(`文件监控错误: ${data.error}`, 'error');
+                realtimeIndicator.classList.add('inactive');
+                realtimeIndicator.querySelector('span').textContent = '监控已断开';
+            });
+        }
+
+        // Electron 环境下不需要上传文件到服务器
+        // 文件监控由主进程直接处理
+
+        // 显示状态信息
+        function showStatus(message, type = 'info') {
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 5000);
+        }
+
+        // 显示加载状态
+        function showLoading() {
+            loading.style.display = 'block';
+            previewArea.style.display = 'none';
+        }
+
+        // 隐藏加载状态
+        function hideLoading() {
+            loading.style.display = 'none';
+        }
+
+        // 页面清理功能
+        function cleanupPage() {
+            // 清理渲染器
+            if (aseRenderer) {
+                aseRenderer = null;
+            }
+            
+            // 隐藏预览区域
+            previewArea.style.display = 'none';
+            canvasPreview.style.display = 'none';
+            fileInfo.style.display = 'none';
+            
+            // 重置状态
+            currentFileData = null;
+            currentFilePath = null;
+        }
+
+
+
+        // 处理文件（优先使用 Canvas 渲染器）
+        async function handleFile(file) {
+            console.log(`📁 开始处理文件: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+            
+            // 只使用 Canvas 渲染器，移除服务器渲染回退
+            try {
+                showStatus('正在使用 Canvas 渲染器解析文件...', 'info');
+                await loadFileWithCanvasRenderer(file);
+                showStatus('Canvas 渲染成功！', 'success');
+                console.log(`✅ 文件处理完成: ${file.name}`);
+            } catch (error) {
+                console.error('❌ Canvas 渲染器失败:', error);
+                showStatus(`Canvas 渲染失败: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 使用 Canvas 渲染器加载文件
+        async function loadFileWithCanvasRenderer(file) {
+            if (!window.AseCanvasRenderer) {
+                throw new Error('Canvas 渲染器未加载');
+            }
+            
+            console.log(`🎨 创建Canvas渲染器实例`);
+            // 创建渲染器实例
+            aseRenderer = new AseCanvasRenderer(aseCanvas);
+            
+            console.log(`📖 开始加载文件到Canvas渲染器`);
+            // 加载文件
+            const aseData = await aseRenderer.loadAseFile(file);
+            
+            // 验证解析结果
+            if (!aseData || !aseData.frames || aseData.frames.length === 0) {
+                throw new Error('文件解析失败：没有找到有效的帧数据');
+            }
+            
+            console.log(`📊 文件解析成功:`, {
+                frames: aseData.frames.length,
+                width: aseData.width,
+                height: aseData.height,
+                colorDepth: aseData.colorDepth,
+                layers: aseData.layers ? aseData.layers.length : 0
+            });
+            
+            // 显示文件信息
+            const fileInfo = aseRenderer.getFileInfo();
+            displayCanvasFileInfo(fileInfo);
+            
+            // 显示 Canvas 预览
+            canvasPreview.style.display = 'block';
+            renderedPreview.style.display = 'none';
+            
+            // Electron 环境下的文件监控由主进程处理
+            if (isElectron && window.electronAPI) {
+                console.log(`🔗 Electron 环境，文件监控由主进程处理`);
+                showStatus('文件已加载，IPC 监控已启用', 'success');
+            } else {
+                console.log(`⚠️ 非 Electron 环境，无法启动文件监控`);
+                showStatus('文件已加载，但无法启动文件监控', 'warning');
+            }
+        }
+        
+        // Electron 模式下使用 Canvas 渲染器
+        async function loadElectronFileWithCanvasRenderer(aseData, filePath) {
+            if (!window.AseCanvasRenderer) {
+                throw new Error('Canvas 渲染器未加载');
+            }
+            
+            console.log('🎨 创建 Canvas 渲染器实例');
+            // 创建渲染器实例
+            aseRenderer = new AseCanvasRenderer(aseCanvas);
+            
+            console.log('📊 设置 Electron 解析的数据:', aseData);
+            // 直接设置数据（Electron 已经解析好了）
+            aseRenderer.aseData = aseData;
+            aseRenderer.currentFrame = 0;
+            
+            // 验证数据完整性
+            if (!aseData || !aseData.frames || aseData.frames.length === 0) {
+                throw new Error('Electron 传递的数据无效：没有找到有效的帧数据');
+            }
+            
+            console.log(`📊 Electron 数据验证成功:`, {
+                frames: aseData.frames.length,
+                width: aseData.width,
+                height: aseData.height,
+                filename: aseData.filename
+            });
+            
+            // 立即渲染第一帧，确保显示
+            console.log('🎨 开始渲染第一帧');
+            aseRenderer.renderFrame(0);
+            
+            // 显示文件信息
+            const fileInfo = aseRenderer.getFileInfo();
+            displayCanvasFileInfo(fileInfo);
+            
+            // 显示 Canvas 预览
+            canvasPreview.style.display = 'block';
+            // 确保没有其他预览显示
+            const renderedPreview = document.getElementById('renderedPreview');
+            if (renderedPreview) {
+                renderedPreview.style.display = 'none';
+            }
+            
+            // 确保画布可见 - 延迟渲染确保 DOM 更新完成
+            setTimeout(() => {
+                console.log('🔄 延迟渲染确保显示');
+                aseRenderer.renderFrame(0);
+            }, 100);
+            
+            // Electron 环境下的文件监控由主进程处理，不需要启动自动刷新
+            console.log(`🔗 Electron 文件监控已由主进程处理`);
+            showStatus('Electron 文件监控已启用', 'success');
+        }
+        
+        // 显示 Canvas 文件信息
+        function displayCanvasFileInfo(info) {
+            fileInfo.style.display = 'block';
+            previewArea.style.display = 'block';
+            
+            // 更新帧信息
+            updateFrameInfo();
+            
+            // 重置实时监控指示器
+            realtimeIndicator.classList.remove('inactive');
+            realtimeIndicator.querySelector('span').textContent = 'Canvas 渲染已启用';
+        }
+        
+        // 更新帧信息显示
+        function updateFrameInfo() {
+            if (aseRenderer && aseRenderer.aseData) {
+                const info = aseRenderer.getFileInfo();
+                frameInfo.textContent = `帧 ${aseRenderer.currentFrame + 1}/${info.numFrames} | 尺寸: ${info.width}x${info.height} | 颜色深度: ${info.colorDepth}位`;
+            }
+        }
+
+        // Electron 模式：打开本地文件
+        async function openElectronFile(filePath) {
+            try {
+                console.log('🔗 开始打开 Electron 文件:', filePath);
+                showLoading();
+                showStatus('正在打开文件...', 'info');
+                
+                const result = await window.electronAPI.openFile(filePath);
+                console.log('📊 Electron 文件打开结果:', result);
+                
+                if (result.success) {
+                    console.log('✅ 文件解析成功，开始渲染');
+                    currentFileData = result.data;
+                    currentFilePath = result.filePath;
+                    
+                    // 使用 Canvas 渲染器
+                    try {
+                        showStatus('正在使用 Canvas 渲染器...', 'info');
+                        await loadElectronFileWithCanvasRenderer(result.data, result.filePath);
+                        showStatus('Canvas 渲染成功！', 'success');
+                        console.log('🎨 Canvas 渲染完成');
+                    } catch (canvasError) {
+                        console.error('❌ Canvas 渲染器失败:', canvasError);
+                        showStatus(`Canvas 渲染失败: ${canvasError.message}`, 'error');
+                    }
+                } else {
+                    console.error('❌ 文件解析失败:', result.error);
+                    showStatus(`解析失败: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('❌ 打开文件失败:', error);
+                showStatus(`打开文件失败: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        
+        // 启动文件监控状态指示
+        function startFileWatcher(filePath) {
+            console.log(`👁️ 文件监控状态已设置: ${filePath}`);
+            
+            // 在 Electron 环境中，依赖主进程的 IPC 通信
+            if (isElectron) {
+                console.log(`🔗 使用 Electron IPC 通信进行文件监控`);
+                realtimeIndicator.classList.remove('inactive');
+                realtimeIndicator.querySelector('span').textContent = 'Electron 监控已启用';
+                console.log(`✅ Electron 文件监控已启动: ${filePath}`);
+                return;
+            }
+            
+        }
+        
+        // 停止文件监控状态指示
+        function stopFileWatcher() {
+            realtimeIndicator.classList.add('inactive');
+            realtimeIndicator.querySelector('span').textContent = '监控已断开';
+            console.log(`⏹️ 文件监控状态已停止`);
+            
+        }
+        
+        
+
+        // 自动渲染第一帧（Canvas 渲染器）
+        async function autoRenderFirstFrame() {
+            if (aseRenderer) {
+                try {
+                    showStatus('正在渲染第一帧...', 'info');
+                    aseRenderer.renderFrame(0);
+                    showStatus('第一帧渲染成功！', 'success');
+                } catch (error) {
+                    showStatus(`渲染失败: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // 文件选择处理（支持拖拽和点击）
+        fileSelectArea.addEventListener('click', () => {
+            if (isElectron && window.electronAPI) {
+                // Electron 环境：直接打开文件选择对话框
+                window.electronAPI.openFileDialog().then(result => {
+                    if (result.success) {
+                        console.log('用户选择的文件:', result.filePath);
+                        // 修复：等待文件打开结果并处理
+                        openElectronFile(result.filePath);
+                    } else {
+                        console.log('用户取消了文件选择');
+                    }
+                });
+            } else {
+                // Web 环境：使用文件输入框
+                fileInput.click();
+            }
+        });
+
+        // Electron 环境下的拖拽处理由主进程处理
+        // 这里只处理非 Electron 环境的拖拽
+        if (!isElectron) {
+            fileSelectArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileSelectArea.classList.add('drag-over');
+            });
+
+            fileSelectArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileSelectArea.classList.remove('drag-over');
+            });
+
+            fileSelectArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileSelectArea.classList.remove('drag-over');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    if (file.name.toLowerCase().endsWith('.aseprite')) {
+                        // 清理旧状态
+                        cleanupPage();
+                        showLoading();
+                        handleFile(file);
+                    } else {
+                        showStatus('请选择 .aseprite 文件', 'error');
+                    }
+                }
+            });
+        } else {
+            console.log('🔗 Electron 环境，拖拽处理由主进程负责');
+        }
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (isElectron && window.electronAPI) {
+                    // Electron 环境：使用文件选择对话框
+                    console.log('🔗 Electron 环境，打开文件选择对话框');
+                    window.electronAPI.openFileDialog().then(result => {
+                        if (result.success) {
+                            console.log('用户选择的文件:', result.filePath);
+                            // 修复：等待文件打开结果并处理
+                            openElectronFile(result.filePath);
+                        } else {
+                            console.log('用户取消了文件选择');
+                        }
+                    });
+                } else {
+                    // Web 环境：使用前端处理
+                    cleanupPage();
+                    showLoading();
+                    handleFile(file);
+                }
+            }
+        });
+
+
+
+
+
+        // Electron 环境下不需要自动刷新机制
+        // 文件监控通过 IPC 实时通知
+        
+
+        // 页面卸载时清理
+        window.addEventListener('beforeunload', () => {
+            stopFileWatcher();
+            cleanupPage();
+        });
+
+
+        // 延迟初始化，确保所有脚本都加载完成
+        window.addEventListener('load', async () => {
+            console.log('页面加载完成，开始初始化');
+            
+            // 初始化 IPC 通信
+            initElectronIPC();
+            
+            if (isElectron) {
+                showStatus('Electron 环境已就绪，请选择文件开始预览', 'success');
+            } else {
+                showStatus('Web 环境已就绪，请选择文件开始预览', 'info');
+            }
+        });
+    </script>
+</body>
+</html>
