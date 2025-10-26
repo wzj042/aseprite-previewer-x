@@ -170,6 +170,17 @@ class AseReader {
         const pixH = this.readNextByte();
         this.pixelRatio = `${pixW}:${pixH}`;
         this.skipBytes(92);
+        
+        console.log('📊 AseReader 头部信息:', {
+            fileSize: this.fileSize,
+            numFrames: this.numFrames,
+            width: this.width,
+            height: this.height,
+            colorDepth: this.colorDepth,
+            numColors: this.numColors,
+            pixelRatio: this.pixelRatio
+        });
+        
         return this.numFrames;
     }
     

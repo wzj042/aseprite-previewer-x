@@ -301,6 +301,63 @@
             100% { opacity: 1; }
         }
 
+        /* 简易按钮样式 */
+        .simple-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .simple-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .simple-btn:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .simple-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .simple-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+        }
+
+        .simple-btn.primary:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            border-color: #5a6fd8;
+        }
+
+        .simple-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .simple-btn:disabled:hover {
+            border-color: #ddd;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
 
     </style>
 </head>
@@ -335,6 +392,33 @@
                     <canvas id="aseCanvas" width="240" height="240" style="border: 2px solid #ddd; border-radius: 10px; background: #fff; cursor: grab;"></canvas>
                 </div>
                 <div class="frame-info" id="frameInfo" style="margin-top: 10px; font-size: 14px; color: #666;"></div>
+                
+                <!-- 动画控制按钮 -->
+                <div class="animation-controls" id="animationControls" style="margin-top: 15px; display: none;">
+                    <div class="simple-buttons">
+                        <button class="simple-btn" id="prevFrameBtn">⏮️</button>
+                        <button class="simple-btn primary" id="playPauseBtn">
+                            <span id="playPauseIcon">▶️</span>
+                        </button>
+                        <button class="simple-btn" id="nextFrameBtn">⏭️</button>
+                        <button class="simple-btn" id="flipBtn" title="水平翻转">
+                            <span id="flipIcon">🔄</span>
+                        </button>
+                    </div>
+                    <div class="animation-info" id="animationInfo" style="margin-top: 8px; font-size: 12px; color: #888; text-align: center;">
+                        <span id="animationStatus">动画已停止</span>
+                        <span id="frameTiming" style="margin-left: 10px;"></span>
+                    </div>
+                    <!-- 自动翻转控制 -->
+                    <div class="auto-flip-controls" id="autoFlipControls" style="margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <label for="flipInterval" style="font-size: 12px; color: #666;">翻转间隔:</label>
+                        <input type="number" id="flipInterval" min="0" max="10000" step="100" value="0" style="width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
+                        <span style="font-size: 12px; color: #666;">ms</span>
+                        <button class="simple-btn" id="toggleAutoFlipBtn" title="切换自动翻转" style="width: 30px; height: 30px;">
+                            <span id="autoFlipIcon">⏸️</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -360,10 +444,38 @@
         const canvasPreview = document.getElementById('canvasPreview');
         const aseCanvas = document.getElementById('aseCanvas');
         const frameInfo = document.getElementById('frameInfo');
+        
+        // 动画控制相关元素
+        const animationControls = document.getElementById('animationControls');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playPauseIcon = document.getElementById('playPauseIcon');
+        const prevFrameBtn = document.getElementById('prevFrameBtn');
+        const nextFrameBtn = document.getElementById('nextFrameBtn');
+        const flipBtn = document.getElementById('flipBtn');
+        const flipIcon = document.getElementById('flipIcon');
+        const animationStatus = document.getElementById('animationStatus');
+        const frameTiming = document.getElementById('frameTiming');
+        
+        // 自动翻转控制相关元素
+        const autoFlipControls = document.getElementById('autoFlipControls');
+        const flipIntervalInput = document.getElementById('flipInterval');
+        const toggleAutoFlipBtn = document.getElementById('toggleAutoFlipBtn');
+        const autoFlipIcon = document.getElementById('autoFlipIcon');
 
         let currentFileData = null;
         let currentFilePath = null;
         let aseRenderer = null;
+        
+        // 动画控制状态
+        let isPlaying = false;
+        let animationInterval = null;
+        let currentAnimationSpeed = 100; // 默认100ms间隔
+        let isFlipped = false; // 水平翻转状态
+        
+        // 自动翻转控制状态
+        let isAutoFlipEnabled = false;
+        let autoFlipInterval = null;
+        let flipIntervalMs = 0; // 翻转间隔（毫秒）
 
         // 检查是否在 Electron 环境中
         const isElectron = typeof window.electronAPI !== 'undefined';
@@ -452,6 +564,12 @@
 
         // 页面清理功能
         function cleanupPage() {
+            // 停止动画播放
+            stopAnimation();
+            
+            // 停止自动翻转
+            stopAutoFlip();
+            
             // 清理渲染器
             if (aseRenderer) {
                 aseRenderer = null;
@@ -461,10 +579,17 @@
             previewArea.style.display = 'none';
             canvasPreview.style.display = 'none';
             fileInfo.style.display = 'none';
+            animationControls.style.display = 'none';
             
             // 重置状态
             currentFileData = null;
             currentFilePath = null;
+            isPlaying = false;
+            animationInterval = null;
+            isFlipped = false;
+            isAutoFlipEnabled = false;
+            autoFlipInterval = null;
+            flipIntervalMs = 0;
         }
 
 
@@ -604,6 +729,200 @@
             if (aseRenderer && aseRenderer.aseData) {
                 const info = aseRenderer.getFileInfo();
                 frameInfo.textContent = `帧 ${aseRenderer.currentFrame + 1}/${info.numFrames} | 尺寸: ${info.width}x${info.height} | 颜色深度: ${info.colorDepth}位`;
+                
+                // 更新动画控制状态
+                updateAnimationControls(info);
+            }
+        }
+        
+        // 更新动画控制界面
+        function updateAnimationControls(info) {
+            if (aseRenderer && aseRenderer.hasMultipleFrames()) {
+                // 多帧文件，显示动画控制
+                animationControls.style.display = 'block';
+                
+                // 更新帧时间信息
+                const durationMs = aseRenderer.getCurrentFrameDuration();
+                frameTiming.textContent = `帧时长: ${durationMs}ms`;
+                
+                // 更新播放按钮状态
+                if (isPlaying) {
+                    playPauseIcon.textContent = '⏸️';
+                    animationStatus.textContent = '动画播放中...';
+                } else {
+                    playPauseIcon.textContent = '▶️';
+                    animationStatus.textContent = '动画已停止';
+                }
+            } else {
+                // 单帧文件，显示动画控制（包括自动翻转）
+                animationControls.style.display = 'block';
+                
+                // 隐藏动画播放控制，但保留翻转控制
+                const simpleButtons = animationControls.querySelector('.simple-buttons');
+                if (simpleButtons) {
+                    simpleButtons.style.display = 'none';
+                }
+                
+                // 更新状态信息
+                animationStatus.textContent = '单帧文件';
+                frameTiming.textContent = '';
+            }
+        }
+        
+        // 播放/暂停动画
+        function toggleAnimation() {
+            if (!aseRenderer || !aseRenderer.hasMultipleFrames()) return;
+            
+            if (isPlaying) {
+                // 暂停动画
+                stopAnimation();
+            } else {
+                // 开始播放动画
+                startAnimation();
+            }
+        }
+        
+        // 开始播放动画
+        function startAnimation() {
+            if (!aseRenderer || !aseRenderer.hasMultipleFrames()) return;
+            
+            isPlaying = true;
+            playPauseIcon.textContent = '⏸️';
+            animationStatus.textContent = '动画播放中...';
+            
+            // 使用当前帧的持续时间
+            const frameDuration = aseRenderer.getCurrentFrameDuration();
+            
+            animationInterval = setInterval(() => {
+                // 使用循环播放方法
+                aseRenderer.nextFrameLoop();
+                updateFrameInfo();
+                
+                // 更新帧时间信息
+                const newFrameDuration = aseRenderer.getCurrentFrameDuration();
+                frameTiming.textContent = `帧时长: ${newFrameDuration}ms`;
+            }, Math.max(frameDuration, 50)); // 最小50ms间隔
+            
+            console.log(`🎬 开始播放动画，帧间隔: ${frameDuration}ms`);
+        }
+        
+        // 停止播放动画
+        function stopAnimation() {
+            isPlaying = false;
+            playPauseIcon.textContent = '▶️';
+            animationStatus.textContent = '动画已停止';
+            
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+            }
+            
+            console.log('⏹️ 停止播放动画');
+        }
+        
+        // 切换到上一帧（越界取余处理）
+        function goToPrevFrame() {
+            if (!aseRenderer || !aseRenderer.hasMultipleFrames()) return;
+            
+            const frameCount = aseRenderer.aseData.numFrames || aseRenderer.aseData.frames.length;
+            const prevFrame = (aseRenderer.currentFrame - 1 + frameCount) % frameCount;
+            aseRenderer.renderFrame(prevFrame);
+            updateFrameInfo();
+            console.log(`⏮️ 切换到上一帧: ${prevFrame + 1}/${frameCount}`);
+        }
+        
+        // 切换到下一帧（越界取余处理）
+        function goToNextFrame() {
+            if (!aseRenderer || !aseRenderer.hasMultipleFrames()) return;
+            
+            const frameCount = aseRenderer.aseData.numFrames || aseRenderer.aseData.frames.length;
+            const nextFrame = (aseRenderer.currentFrame + 1) % frameCount;
+            aseRenderer.renderFrame(nextFrame);
+            updateFrameInfo();
+            console.log(`⏭️ 切换到下一帧: ${nextFrame + 1}/${frameCount}`);
+        }
+        
+        // 切换水平翻转
+        function toggleFlip() {
+            if (!aseRenderer) return;
+            
+            isFlipped = aseRenderer.toggleFlip();
+            
+            // 更新翻转按钮图标
+            flipIcon.textContent = isFlipped ? '↩️' : '🔄';
+            
+            console.log(`🔄 水平翻转切换: ${isFlipped ? '已翻转' : '正常'}`);
+        }
+        
+        // 切换自动翻转
+        function toggleAutoFlip() {
+            if (!aseRenderer) return;
+            
+            flipIntervalMs = parseInt(flipIntervalInput.value) || 0;
+            
+            if (flipIntervalMs <= 0) {
+                // 停止自动翻转
+                stopAutoFlip();
+                return;
+            }
+            
+            if (isAutoFlipEnabled) {
+                // 停止自动翻转
+                stopAutoFlip();
+            } else {
+                // 开始自动翻转
+                startAutoFlip();
+            }
+        }
+        
+        // 开始自动翻转
+        function startAutoFlip() {
+            if (!aseRenderer || flipIntervalMs <= 0) return;
+            
+            isAutoFlipEnabled = true;
+            autoFlipIcon.textContent = '⏸️';
+            toggleAutoFlipBtn.title = '停止自动翻转';
+            
+            // 设置自动翻转定时器
+            autoFlipInterval = setInterval(() => {
+                if (aseRenderer) {
+                    toggleFlip();
+                }
+            }, flipIntervalMs);
+            
+            console.log(`🔄 开始自动翻转，间隔: ${flipIntervalMs}ms`);
+        }
+        
+        // 停止自动翻转
+        function stopAutoFlip() {
+            isAutoFlipEnabled = false;
+            autoFlipIcon.textContent = '▶️';
+            toggleAutoFlipBtn.title = '开始自动翻转';
+            
+            if (autoFlipInterval) {
+                clearInterval(autoFlipInterval);
+                autoFlipInterval = null;
+            }
+            
+            console.log('⏹️ 停止自动翻转');
+        }
+        
+        // 更新翻转间隔
+        function updateFlipInterval() {
+            const newInterval = parseInt(flipIntervalInput.value) || 0;
+            
+            if (newInterval !== flipIntervalMs) {
+                flipIntervalMs = newInterval;
+                
+                // 如果正在自动翻转，重新启动以应用新间隔
+                if (isAutoFlipEnabled && flipIntervalMs > 0) {
+                    stopAutoFlip();
+                    startAutoFlip();
+                } else if (flipIntervalMs <= 0) {
+                    stopAutoFlip();
+                }
+                
+                console.log(`🔄 翻转间隔更新为: ${flipIntervalMs}ms`);
             }
         }
 
@@ -771,8 +1090,21 @@
         // 文件监控通过 IPC 实时通知
         
 
+        // 添加动画控制事件监听器
+        playPauseBtn.addEventListener('click', toggleAnimation);
+        prevFrameBtn.addEventListener('click', goToPrevFrame);
+        nextFrameBtn.addEventListener('click', goToNextFrame);
+        flipBtn.addEventListener('click', toggleFlip);
+        
+        // 添加自动翻转控制事件监听器
+        toggleAutoFlipBtn.addEventListener('click', toggleAutoFlip);
+        flipIntervalInput.addEventListener('input', updateFlipInterval);
+        flipIntervalInput.addEventListener('change', updateFlipInterval);
+        
         // 页面卸载时清理
         window.addEventListener('beforeunload', () => {
+            stopAnimation(); // 停止动画播放
+            stopAutoFlip(); // 停止自动翻转
             stopFileWatcher();
             cleanupPage();
         });

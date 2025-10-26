@@ -23,6 +23,7 @@ class AseCanvasRenderer {
         this.aseData = null;
         this.currentFrame = 0;
         this.lastRenderTime = 0;
+        this.isFlipped = false; // 水平翻转状态
         
         this.initCanvas();
         this.setupEventListeners();
@@ -124,7 +125,11 @@ class AseCanvasRenderer {
      */
     renderFrame(frameIndex) {
         if (!this.aseData || !this.aseData.frames[frameIndex]) {
-            console.warn('❌ 无效的帧索引或数据');
+            console.warn('❌ 无效的帧索引或数据:', {
+                frameIndex: frameIndex,
+                framesLength: this.aseData?.frames?.length,
+                availableFrames: this.aseData?.frames?.map((f, i) => i)
+            });
             return;
         }
         
@@ -153,7 +158,7 @@ class AseCanvasRenderer {
         const celLen = frame.cels.length;
         
         
-        // 先应用缩放和居中变换
+        // 先应用缩放和居中变换（包含翻转逻辑）
         this.fitToContainer();
         
         // 渲染所有可见的 Cel（只渲染启用的图层）
@@ -313,7 +318,7 @@ class AseCanvasRenderer {
             // 将像素数据放到临时画布
             tempCtx.putImageData(imageData, 0, 0);
             
-            // 将临时画布的内容绘制到主画布的正确位置
+            // 将临时画布的内容绘制到主画布的正确位置（正常绘制）
             this.ctx.drawImage(tempCanvas, cel.xpos, cel.ypos);
             
             console.log(`✅ Cel ${numCel} 渲染完成: 位置(${cel.xpos}, ${cel.ypos}), 尺寸(${cel.w}x${cel.h})`);
@@ -461,17 +466,103 @@ class AseCanvasRenderer {
      * 切换到下一帧
      */
     nextFrame() {
-        if (this.aseData && this.currentFrame < this.aseData.numFrames - 1) {
+        if (!this.aseData) return false;
+        
+        const frameCount = this.aseData.numFrames || (this.aseData.frames ? this.aseData.frames.length : 0);
+        if (this.currentFrame < frameCount - 1) {
             this.renderFrame(this.currentFrame + 1);
+            return true;
         }
+        return false;
     }
     
     /**
      * 切换到上一帧
      */
     prevFrame() {
-        if (this.aseData && this.currentFrame > 0) {
+        if (!this.aseData) return false;
+        
+        if (this.currentFrame > 0) {
             this.renderFrame(this.currentFrame - 1);
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * 循环播放到下一帧（用于动画播放）
+     */
+    nextFrameLoop() {
+        if (!this.aseData) return false;
+        
+        const frameCount = this.aseData.numFrames || (this.aseData.frames ? this.aseData.frames.length : 0);
+        if (frameCount <= 0) return false;
+        
+        const nextFrame = (this.currentFrame + 1) % frameCount;
+        this.renderFrame(nextFrame);
+        return true;
+    }
+    
+    /**
+     * 获取当前帧的持续时间（毫秒）
+     */
+    getCurrentFrameDuration() {
+        if (!this.aseData || !this.aseData.frames || !this.aseData.frames[this.currentFrame]) {
+            return 100; // 默认100ms
+        }
+        
+        const frameData = this.aseData.frames[this.currentFrame];
+        return frameData.frameDuration || 100;
+    }
+    
+    /**
+     * 检查是否有多帧（可用于动画）
+     */
+    hasMultipleFrames() {
+        if (!this.aseData) return false;
+        
+        // 优先使用 numFrames，如果不存在则使用 frames.length
+        const frameCount = this.aseData.numFrames || (this.aseData.frames ? this.aseData.frames.length : 0);
+        const result = frameCount > 1;
+        
+        // 只在调试模式下输出详细信息
+        if (window.DEBUG_RENDERER) {
+            console.log('🔍 检查多帧状态:', {
+                hasAseData: !!this.aseData,
+                numFrames: this.aseData?.numFrames,
+                framesLength: this.aseData?.frames?.length,
+                frameCount: frameCount,
+                result: result
+            });
+        }
+        return result;
+    }
+    
+    /**
+     * 切换水平翻转状态
+     */
+    toggleFlip() {
+        this.isFlipped = !this.isFlipped;
+        console.log(`🔄 水平翻转状态: ${this.isFlipped ? '已翻转' : '正常'}`);
+        
+        // 重新渲染当前帧以应用翻转
+        if (this.aseData) {
+            this.renderFrame(this.currentFrame);
+        }
+        
+        return this.isFlipped;
+    }
+    
+    /**
+     * 设置水平翻转状态
+     */
+    setFlip(flipped) {
+        this.isFlipped = flipped;
+        console.log(`🔄 设置水平翻转状态: ${this.isFlipped ? '已翻转' : '正常'}`);
+        
+        // 重新渲染当前帧以应用翻转
+        if (this.aseData) {
+            this.renderFrame(this.currentFrame);
         }
     }
     
@@ -509,6 +600,12 @@ class AseCanvasRenderer {
         this.ctx.scale(scale, scale);
         this.ctx.translate(-imageWidth / 2, -imageHeight / 2);
         
+        // 如果启用水平翻转，在缩放和居中之后应用翻转
+        if (this.isFlipped) {
+            this.ctx.scale(-1, 1);
+            this.ctx.translate(-imageWidth, 0);
+        }
+        
         // 更新变换状态
         this.trans.x = centerX;
         this.trans.y = centerY;
@@ -527,6 +624,7 @@ class AseCanvasRenderer {
             // 直接重新渲染，避免循环调用
             this.clearCanvas();
             this.fitToContainer();
+            
             const frame = this.aseData.frames[this.currentFrame];
             const celLen = frame.cels.length;
             for (let i = 0; i < celLen; i++) {
@@ -584,7 +682,7 @@ class AseCanvasRenderer {
         const frame = this.aseData.frames[frameIndex];
         const celLen = frame.cels.length;
         
-        // 先应用缩放和居中变换
+        // 先应用缩放和居中变换（包含翻转逻辑）
         this.fitToContainer();
         
         // 渲染所有可见的 Cel（只渲染启用的图层）
