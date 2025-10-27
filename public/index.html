@@ -65,6 +65,15 @@
             box-shadow: 0 15px 40px rgba(102, 126, 234, 0.25);
         }
 
+        .file-select-area.drag-over .file-select-icon {
+            animation: dragBounce 0.6s ease-in-out infinite alternate;
+        }
+
+        @keyframes dragBounce {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-5px) scale(1.1); }
+        }
+
         .file-select-area:active {
             transform: translateY(0);
             box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
@@ -523,7 +532,7 @@
 
         /* 深色模式CSS变量 */
         :root {
-            --chat-bg-color: #EDEDED;
+            --chat-bg-color: #F5F5F5;
             --chat-panel-color: #EDEDED;
             --chat-selected-color: #FEFEFE;
             --chat-text-color: #333;
@@ -531,7 +540,7 @@
         }
 
         [data-theme="dark"] {
-            --chat-bg-color: #121212;
+            --chat-bg-color: #1D1D1D;
             --chat-panel-color: #171717;
             --chat-selected-color: #242424;
             --chat-text-color: #fff;
@@ -848,8 +857,8 @@
         
         <div class="file-select-area" id="fileSelectArea">
             <div class="file-select-icon">📁</div>
-            <div class="file-select-text">选择 .aseprite 文件进行预览</div>
-            <div class="file-select-hint">支持拖拽上传或点击选择</div>
+            <div class="file-select-text" id="fileSelectText">选择 .aseprite 文件进行预览</div>
+            <div class="file-select-hint" id="fileSelectHint">支持拖拽上传或点击选择</div>
             <input type="file" class="file-input" id="fileInput" accept=".aseprite" style="display: none;">
         </div>
 
@@ -1080,6 +1089,59 @@
         // 检查是否在 Electron 环境中
         const isElectron = typeof window.electronAPI !== 'undefined';
         
+        // 验证 Aseprite 文件
+        function isValidAsepriteFile(file) {
+            // 检查文件扩展名
+            if (!file.name.toLowerCase().endsWith('.aseprite')) {
+                return false;
+            }
+            
+            // 检查文件大小（至少要有基本的文件头）
+            if (file.size < 128) {
+                console.warn('文件太小，可能不是有效的 Aseprite 文件');
+                return false;
+            }
+            
+            // 检查文件类型
+            if (file.type && file.type !== '' && !file.type.includes('application/octet-stream')) {
+                console.log('文件类型:', file.type);
+            }
+            
+            return true;
+        }
+        
+        // 处理 Electron 环境下的拖拽文件
+        async function handleElectronDroppedFile(file) {
+            try {
+                console.log('🔗 开始处理 Electron 拖拽文件:', file.name);
+                showStatus('正在处理拖拽文件...', 'info');
+                
+                // 将文件转换为 ArrayBuffer
+                const arrayBuffer = await file.arrayBuffer();
+                
+                // 使用 AseReader 解析文件
+                const aseReader = new AseReader(arrayBuffer, file.name);
+                aseReader.parse();
+                
+                console.log('📊 Electron 拖拽文件解析成功:', {
+                    frames: aseReader.frames.length,
+                    width: aseReader.width,
+                    height: aseReader.height,
+                    colorDepth: aseReader.colorDepth
+                });
+                
+                // 使用 Canvas 渲染器
+                await loadElectronFileWithCanvasRenderer(aseReader, file.name);
+                showStatus('拖拽文件处理成功！', 'success');
+                
+            } catch (error) {
+                console.error('❌ Electron 拖拽文件处理失败:', error);
+                showStatus(`拖拽文件处理失败: ${error.message}`, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+        
         // 调试模式开关
         window.DEBUG_RENDERER = true; // 启用渲染器调试日志
         window.DEBUG_FILE_WATCH = true; // 启用文件监控调试日志
@@ -1108,6 +1170,9 @@
                     aseRenderer.updateFileData(data.data);
                     updateFrameInfo();
                     
+                    // 同步图层列表状态（确保UI反映当前的图层可见性设置）
+                    syncLayerListState();
+                    
                     // 始终更新聊天预览
                     updateChatPreview();
                     
@@ -1124,6 +1189,9 @@
                 if (aseRenderer) {
                     console.log('🎨 执行强制刷新');
                     aseRenderer.forceRefresh();
+                    
+                    // 同步图层列表状态
+                    syncLayerListState();
                     
                     // 始终更新聊天预览
                     updateChatPreview();
@@ -1419,15 +1487,54 @@
             });
         }
         
+        // 同步图层列表状态（确保UI反映当前的图层可见性设置）
+        function syncLayerListState() {
+            if (!aseRenderer || !aseRenderer.aseData) {
+                console.warn('⚠️ 同步图层列表状态失败: 渲染器或数据不可用');
+                return;
+            }
+            
+            console.log('🔄 同步图层列表状态');
+            
+            // 获取所有图层项
+            const layerItems = layerList.querySelectorAll('.layer-item');
+            
+            layerItems.forEach(layerItem => {
+                const layerIndex = parseInt(layerItem.dataset.layerIndex);
+                const visibilityToggle = layerItem.querySelector('.layer-visibility-toggle');
+                
+                if (layerIndex !== undefined && visibilityToggle) {
+                    // 获取当前图层的实际可见性状态
+                    const isCurrentlyVisible = aseRenderer.isLayerVisible(layerIndex);
+                    
+                    // 更新UI状态
+                    if (isCurrentlyVisible) {
+                        layerItem.classList.remove('hidden');
+                        visibilityToggle.classList.add('visible');
+                    } else {
+                        layerItem.classList.add('hidden');
+                        visibilityToggle.classList.remove('visible');
+                    }
+                    
+                    console.log(`🎨 图层 ${layerIndex} 状态同步: ${isCurrentlyVisible ? '可见' : '隐藏'}`);
+                }
+            });
+            
+            console.log('✅ 图层列表状态同步完成');
+        }
+        
         // 创建图层项
         function createLayerItem(layer, displayIndex) {
+            // 获取当前图层的实际可见性状态（包括用户自定义设置）
+            const isCurrentlyVisible = aseRenderer ? aseRenderer.isLayerVisible(layer.index) : layer.visible;
+            
             const layerItem = document.createElement('div');
-            layerItem.className = `layer-item ${layer.visible ? '' : 'hidden'}`;
+            layerItem.className = `layer-item ${isCurrentlyVisible ? '' : 'hidden'}`;
             layerItem.dataset.layerIndex = layer.index; // 使用原始索引
             
             // 创建可见性切换按钮
             const visibilityToggle = document.createElement('div');
-            visibilityToggle.className = `layer-visibility-toggle ${layer.visible ? 'visible' : ''}`;
+            visibilityToggle.className = `layer-visibility-toggle ${isCurrentlyVisible ? 'visible' : ''}`;
             visibilityToggle.addEventListener('click', (e) => {
                 e.stopPropagation();
                 toggleLayerVisibility(layer.index); // 使用原始索引
@@ -2095,42 +2202,74 @@
             }
         });
 
-        // Electron 环境下的拖拽处理由主进程处理
-        // 这里只处理非 Electron 环境的拖拽
-        if (!isElectron) {
-            fileSelectArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                fileSelectArea.classList.add('drag-over');
-            });
+        // 获取拖拽提示元素
+        const fileSelectText = document.getElementById('fileSelectText');
+        const fileSelectHint = document.getElementById('fileSelectHint');
+        
+        // 拖拽处理 - 所有环境都支持
+        fileSelectArea.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            fileSelectArea.classList.add('drag-over');
+            
+            // 更新提示文本
+            fileSelectText.textContent = '释放文件以开始预览';
+            fileSelectHint.textContent = '拖拽 .aseprite 文件到此处';
+        });
 
-            fileSelectArea.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                fileSelectArea.classList.remove('drag-over');
-            });
+        fileSelectArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            fileSelectArea.classList.add('drag-over');
+        });
 
-            fileSelectArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
+        fileSelectArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // 只有当鼠标真正离开拖拽区域时才移除样式
+            if (!fileSelectArea.contains(e.relatedTarget)) {
                 fileSelectArea.classList.remove('drag-over');
                 
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    const file = files[0];
-                    if (file.name.toLowerCase().endsWith('.aseprite')) {
-                        // 清理旧状态
-                        cleanupPage();
-                        showLoading();
-                        handleFile(file);
-                    } else {
-                        showStatus('请选择 .aseprite 文件', 'error');
-                    }
+                // 恢复原始提示文本
+                fileSelectText.textContent = '选择 .aseprite 文件进行预览';
+                fileSelectHint.textContent = '支持拖拽上传或点击选择';
+            }
+        });
+
+        fileSelectArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            fileSelectArea.classList.remove('drag-over');
+            
+            // 恢复原始提示文本
+            fileSelectText.textContent = '选择 .aseprite 文件进行预览';
+            fileSelectHint.textContent = '支持拖拽上传或点击选择';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                
+                // 验证文件类型
+                if (!isValidAsepriteFile(file)) {
+                    showStatus('请选择有效的 .aseprite 文件', 'error');
+                    return;
                 }
-            });
-        } else {
-            console.log('🔗 Electron 环境，拖拽处理由主进程负责');
-        }
+                
+                // 清理旧状态
+                cleanupPage();
+                showLoading();
+                
+                if (isElectron && window.electronAPI) {
+                    // Electron 环境：使用主进程处理文件
+                    console.log('🔗 Electron 环境，通过主进程处理拖拽文件');
+                    handleElectronDroppedFile(file);
+                } else {
+                    // Web 环境：直接处理文件
+                    console.log('🌐 Web 环境，直接处理拖拽文件');
+                    handleFile(file);
+                }
+            }
+        });
 
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];

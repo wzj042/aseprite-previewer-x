@@ -903,8 +903,11 @@ class AseCanvasRenderer {
         console.log(`   旧尺寸: ${this.aseData?.width || 0}x${this.aseData?.height || 0}`);
         console.log(`   新尺寸: ${newAseData.width || 0}x${newAseData.height || 0}`);
         
-        // 保存当前帧索引，如果新数据中还有该帧则保持
+        // 保存当前状态
         const oldCurrentFrame = this.currentFrame;
+        const oldLayerVisibility = new Map(this.layerVisibility); // 深拷贝图层可见性状态
+        const oldIsFlipped = this.isFlipped; // 保存翻转状态
+        
         const maxFrame = (newAseData.numFrames || newAseData.frames?.length || 1) - 1;
         
         this.aseData = newAseData;
@@ -916,7 +919,13 @@ class AseCanvasRenderer {
             this.currentFrame = oldCurrentFrame;
         }
         
+        // 恢复图层可见性状态
+        this.layerVisibility = oldLayerVisibility;
+        this.isFlipped = oldIsFlipped;
+        
         console.log(`✅ 文件数据更新完成，重新渲染帧 ${this.currentFrame}`);
+        console.log(`🎨 图层可见性状态已恢复:`, Array.from(this.layerVisibility.entries()));
+        console.log(`🔄 翻转状态已恢复: ${this.isFlipped ? '已翻转' : '正常'}`);
         
         // 强制刷新渲染，绕过频率限制
         this.forceRender(this.currentFrame);
