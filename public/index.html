@@ -401,9 +401,7 @@
                             <span id="playPauseIcon">▶️</span>
                         </button>
                         <button class="simple-btn" id="nextFrameBtn">⏭️</button>
-                        <button class="simple-btn" id="flipBtn" title="水平翻转">
-                            <span id="flipIcon">🔄</span>
-                        </button>
+                        
                     </div>
                     <div class="animation-info" id="animationInfo" style="margin-top: 8px; font-size: 12px; color: #888; text-align: center;">
                         <span id="animationStatus">动画已停止</span>
@@ -416,6 +414,9 @@
                         <span style="font-size: 12px; color: #666;">ms</span>
                         <button class="simple-btn" id="toggleAutoFlipBtn" title="切换自动翻转" style="width: 30px; height: 30px;">
                             <span id="autoFlipIcon">⏸️</span>
+                        </button>
+                        <button class="simple-btn" id="flipBtn" title="水平翻转">
+                            <span id="flipIcon">🔄</span>
                         </button>
                     </div>
                 </div>
@@ -475,7 +476,7 @@
         // 自动翻转控制状态
         let isAutoFlipEnabled = false;
         let autoFlipInterval = null;
-        let flipIntervalMs = 0; // 翻转间隔（毫秒）
+        let flipIntervalMs = 1000; // 翻转间隔（毫秒）
 
         // 检查是否在 Electron 环境中
         const isElectron = typeof window.electronAPI !== 'undefined';
@@ -589,7 +590,7 @@
             isFlipped = false;
             isAutoFlipEnabled = false;
             autoFlipInterval = null;
-            flipIntervalMs = 0;
+            flipIntervalMs = 1000;
         }
 
 
