@@ -25,6 +25,9 @@ class AseCanvasRenderer {
         this.lastRenderTime = 0;
         this.isFlipped = false; // 水平翻转状态
         
+        // 图层控制状态
+        this.layerVisibility = new Map(); // 存储图层可见性状态
+        
         this.initCanvas();
         this.setupEventListeners();
     }
@@ -191,13 +194,147 @@ class AseCanvasRenderer {
             return true;
         }
         
+        // 首先检查用户自定义的可见性设置
+        if (this.layerVisibility.has(layerIndex)) {
+            return this.layerVisibility.get(layerIndex);
+        }
+        
         const layer = this.aseData.layers[layerIndex];
         
         // 检查图层标志位
-        // flags 的第0位表示图层是否可见 (1 = 可见, 0 = 隐藏)
-        const isVisible = (layer.flags & 0x01) === 1;
+        let isVisible;
+        
+        if (typeof layer.flags === 'object' && layer.flags !== null) {
+            // flags 是对象的情况（ase-parser 库解析后的格式）
+            isVisible = layer.flags.visible === true;
+            console.log(`🔍 图层 ${layerIndex} (${layer.name}) 对象flags:`, {
+                flags: layer.flags,
+                visible: layer.flags.visible,
+                isVisible: isVisible
+            });
+        } else if (typeof layer.flags === 'number') {
+            // flags 是数字的情况（原始格式）
+            // flags 的第0位表示图层是否可见 (1 = 可见, 0 = 隐藏)
+            isVisible = (layer.flags & 0x01) === 1;
+            console.log(`🔍 图层 ${layerIndex} (${layer.name}) 数字flags:`, {
+                flags: layer.flags,
+                flagsBinary: layer.flags.toString(2),
+                bit0: layer.flags & 0x01,
+                isVisible: isVisible
+            });
+        } else {
+            // 未知格式，默认可见
+            console.warn(`⚠️ 图层 ${layerIndex} flags 格式未知:`, layer.flags);
+            isVisible = true;
+        }
         
         return isVisible;
+    }
+    
+    /**
+     * 设置图层可见性
+     * @param {number} layerIndex - 图层索引
+     * @param {boolean} visible - 是否可见
+     */
+    setLayerVisibility(layerIndex, visible) {
+        this.layerVisibility.set(layerIndex, visible);
+        console.log(`🎨 图层 ${layerIndex} 可见性设置为: ${visible ? '可见' : '隐藏'}`);
+        
+        // 重新渲染当前帧以应用更改
+        if (this.aseData) {
+            this.renderFrame(this.currentFrame);
+        }
+    }
+    
+    /**
+     * 切换图层可见性
+     * @param {number} layerIndex - 图层索引
+     * @returns {boolean} - 新的可见性状态
+     */
+    toggleLayerVisibility(layerIndex) {
+        const currentVisible = this.isLayerVisible(layerIndex);
+        const newVisible = !currentVisible;
+        this.setLayerVisibility(layerIndex, newVisible);
+        return newVisible;
+    }
+    
+    /**
+     * 获取所有图层信息
+     * @returns {Array} - 图层信息数组
+     */
+    getAllLayers() {
+        if (!this.aseData || !this.aseData.layers) {
+            return [];
+        }
+        
+        // 倒序处理图层，使最上层图层显示在列表顶部
+        const layers = this.aseData.layers.map((layer, index) => {
+            const visible = this.isLayerVisible(index);
+            
+            return {
+                index: index,
+                name: layer.name || `图层 ${index + 1}`,
+                visible: visible,
+                flags: layer.flags,
+                type: layer.type,
+                opacity: layer.opacity,
+                blendMode: layer.blendMode
+            };
+        }).reverse(); // 倒序处理
+        
+        console.log('📊 最终图层列表:', layers);
+        return layers;
+    }
+    
+    /**
+     * 获取图层数量
+     * @returns {number} - 图层数量
+     */
+    getLayerCount() {
+        if (!this.aseData || !this.aseData.layers) {
+            return 0;
+        }
+        return this.aseData.layers.length;
+    }
+    
+    /**
+     * 显示所有图层
+     */
+    showAllLayers() {
+        if (!this.aseData || !this.aseData.layers) {
+            return;
+        }
+        
+        for (let i = 0; i < this.aseData.layers.length; i++) {
+            this.layerVisibility.set(i, true);
+        }
+        
+        console.log('🎨 显示所有图层');
+        
+        // 重新渲染当前帧
+        if (this.aseData) {
+            this.renderFrame(this.currentFrame);
+        }
+    }
+    
+    /**
+     * 隐藏所有图层
+     */
+    hideAllLayers() {
+        if (!this.aseData || !this.aseData.layers) {
+            return;
+        }
+        
+        for (let i = 0; i < this.aseData.layers.length; i++) {
+            this.layerVisibility.set(i, false);
+        }
+        
+        console.log('🎨 隐藏所有图层');
+        
+        // 重新渲染当前帧
+        if (this.aseData) {
+            this.renderFrame(this.currentFrame);
+        }
     }
     
     /**
@@ -449,7 +586,16 @@ class AseCanvasRenderer {
      * 获取文件信息
      */
     getFileInfo() {
-        if (!this.aseData) return null;
+        if (!this.aseData) {
+            console.warn('⚠️ getFileInfo: aseData 为空');
+            return null;
+        }
+        
+        const numLayers = this.getLayerCount();
+        const layers = this.getAllLayers();
+        
+        console.log('📊 getFileInfo - 图层数量:', numLayers);
+        console.log('📊 getFileInfo - 图层列表:', layers);
         
         return {
             name: this.aseData.name || this.aseData.filename || '未知文件',
@@ -458,7 +604,9 @@ class AseCanvasRenderer {
             numFrames: this.aseData.numFrames || (this.aseData.frames ? this.aseData.frames.length : 0),
             colorDepth: this.aseData.colorDepth || 32, // 默认32位
             fileSize: this.aseData.fileSize || 0,
-            pixelRatio: this.aseData.pixelRatio || '1:1'
+            pixelRatio: this.aseData.pixelRatio || '1:1',
+            numLayers: numLayers,
+            layers: layers
         };
     }
     

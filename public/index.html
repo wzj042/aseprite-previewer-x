@@ -359,6 +359,168 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
+        /* 图层控制浮动面板样式 */
+        .layer-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            max-height: 400px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .layer-controls:hover {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .layer-control-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .layer-control-header h4 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .layer-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .layer-list {
+            max-height: 250px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+
+        .layer-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            border-bottom: 1px solid #eee;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            background: white;
+        }
+
+        .layer-item:hover {
+            background-color: #f8f9ff;
+            transform: translateX(4px);
+        }
+
+        .layer-item:last-child {
+            border-bottom: none;
+        }
+
+        .layer-item.hidden {
+            opacity: 0.6;
+            background-color: #f5f5f5;
+        }
+
+        .layer-visibility-toggle {
+            width: 22px;
+            height: 22px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .layer-visibility-toggle:hover {
+            border-color: #667eea;
+            transform: scale(1.1);
+        }
+
+        .layer-visibility-toggle.visible {
+            background: #4CAF50;
+            border-color: #4CAF50;
+            color: white;
+        }
+
+        .layer-visibility-toggle.visible::after {
+            content: '✓';
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .layer-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .layer-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .layer-details {
+            font-size: 11px;
+            color: #666;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .layer-detail-item {
+            background: #e8f0ff;
+            color: #4a5568;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .layer-buttons {
+            padding: 12px 16px;
+            background: #f8f9fa;
+            border-radius: 0 0 10px 10px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .layer-buttons .simple-btn {
+            font-size: 12px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: white;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .layer-buttons .simple-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-1px);
+        }
+
         /* 深色模式CSS变量 */
         :root {
             --chat-bg-color: #EDEDED;
@@ -582,12 +744,12 @@
         }
 
         .emoji-tab:hover {
-            /* background: var(--chat-selected-color); */
+            background: var(--chat-selected-color);
         }
 
         .emoji-tab.active {
-            /* background: var(--chat-selected-color); */
-            /* transform: scale(1.1); */
+            background: var(--chat-selected-color);
+            transform: scale(1.1);
         }
 
         .emoji-grid {
@@ -712,6 +874,29 @@
                     <canvas id="aseCanvas" width="240" height="240" style="border: 2px solid #ddd; border-radius: 10px; background: #fff; cursor: grab;"></canvas>
                 </div>
                 <div class="frame-info" id="frameInfo" style="margin-top: 10px; font-size: 14px; color: #666;"></div>
+                
+                <!-- 图层控制浮动面板 -->
+                <div class="layer-controls" id="layerControls" style="display: none;">
+                    <div class="layer-control-header">
+                        <h4>图层控制</h4>
+                        <div class="layer-count" id="layerCount">图层: 0</div>
+                    </div>
+                    
+                    <!-- 图层列表 -->
+                    <div class="layer-list" id="layerList">
+                        <!-- 图层项将动态生成 -->
+                    </div>
+                    
+                    <!-- 图层控制按钮 -->
+                    <div class="layer-buttons">
+                        <button class="simple-btn" id="showAllLayersBtn" title="显示所有图层">
+                            👁️ 
+                        </button>
+                        <button class="simple-btn" id="hideAllLayersBtn" title="隐藏所有图层">
+                            🙈 
+                        </button>
+                    </div>
+                </div>
                 
                 <!-- 动画控制按钮 -->
                 <div class="animation-controls" id="animationControls" style="margin-top: 15px; display: none;">
@@ -861,6 +1046,13 @@
         const flipIntervalInput = document.getElementById('flipInterval');
         const toggleAutoFlipBtn = document.getElementById('toggleAutoFlipBtn');
         const autoFlipIcon = document.getElementById('autoFlipIcon');
+        
+        // 图层控制相关元素
+        const layerControls = document.getElementById('layerControls');
+        const layerList = document.getElementById('layerList');
+        const layerCount = document.getElementById('layerCount');
+        const showAllLayersBtn = document.getElementById('showAllLayersBtn');
+        const hideAllLayersBtn = document.getElementById('hideAllLayersBtn');
 
         let currentFileData = null;
         let currentFilePath = null;
@@ -1000,6 +1192,7 @@
             chatPreview.style.display = 'none';
             fileInfo.style.display = 'none';
             animationControls.style.display = 'none';
+            layerControls.style.display = 'none';
             
             // 重置状态
             currentFileData = null;
@@ -1172,9 +1365,197 @@
                 // 更新动画控制状态
                 updateAnimationControls(info);
                 
+                // 更新图层控制
+                updateLayerControls(info);
+                
                 // 始终更新聊天预览
                 updateChatPreview();
             }
+        }
+        
+        // 更新图层控制界面
+        function updateLayerControls(info) {
+            console.log('🎨 更新图层控制界面:', info);
+            console.log('🎨 图层信息:', info?.layers);
+            console.log('🎨 图层数量:', info?.numLayers);
+            
+            if (!info || !info.layers || info.layers.length === 0) {
+                console.warn('⚠️ 没有图层信息，隐藏图层控制面板');
+                layerControls.style.display = 'none';
+                return;
+            }
+            
+            console.log('✅ 显示图层控制面板，图层数量:', info.layers.length);
+            
+            // 验证图层可见性状态
+            info.layers.forEach((layer, index) => {
+                console.log(`🔍 图层 ${layer.index} (${layer.name}) 状态:`, {
+                    visible: layer.visible,
+                    flags: layer.flags,
+                    flagsBinary: layer.flags.toString(2),
+                    bit0: layer.flags & 0x01
+                });
+            });
+            
+            // 显示图层控制面板
+            layerControls.style.display = 'block';
+            
+            // 更新图层数量显示
+            layerCount.textContent = `图层: ${info.numLayers}`;
+            
+            // 更新图层列表
+            updateLayerList(info.layers);
+        }
+        
+        // 更新图层列表
+        function updateLayerList(layers) {
+            // 清除现有内容
+            layerList.innerHTML = '';
+            
+            // 为每个图层创建列表项（layers已经是倒序的）
+            layers.forEach((layer, displayIndex) => {
+                const layerItem = createLayerItem(layer, displayIndex);
+                layerList.appendChild(layerItem);
+            });
+        }
+        
+        // 创建图层项
+        function createLayerItem(layer, displayIndex) {
+            const layerItem = document.createElement('div');
+            layerItem.className = `layer-item ${layer.visible ? '' : 'hidden'}`;
+            layerItem.dataset.layerIndex = layer.index; // 使用原始索引
+            
+            // 创建可见性切换按钮
+            const visibilityToggle = document.createElement('div');
+            visibilityToggle.className = `layer-visibility-toggle ${layer.visible ? 'visible' : ''}`;
+            visibilityToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleLayerVisibility(layer.index); // 使用原始索引
+            });
+            
+            // 创建图层信息
+            const layerInfo = document.createElement('div');
+            layerInfo.className = 'layer-info';
+            
+            const layerName = document.createElement('div');
+            layerName.className = 'layer-name';
+            layerName.textContent = layer.name;
+            
+            const layerDetails = document.createElement('div');
+            layerDetails.className = 'layer-details';
+            
+            // 添加图层类型
+            const typeItem = document.createElement('span');
+            typeItem.className = 'layer-detail-item';
+            typeItem.textContent = `类型: ${layer.type}`;
+            
+            // 添加透明度
+            const opacityItem = document.createElement('span');
+            opacityItem.className = 'layer-detail-item';
+            opacityItem.textContent = `透明度: ${layer.opacity}%`;
+            
+            // 添加混合模式
+            const blendItem = document.createElement('span');
+            blendItem.className = 'layer-detail-item';
+            blendItem.textContent = `混合: ${layer.blendMode}`;
+            
+            layerDetails.appendChild(typeItem);
+            layerDetails.appendChild(opacityItem);
+            layerDetails.appendChild(blendItem);
+            
+            layerInfo.appendChild(layerName);
+            layerInfo.appendChild(layerDetails);
+            
+            // 组装图层项
+            layerItem.appendChild(visibilityToggle);
+            layerItem.appendChild(layerInfo);
+            
+            // 点击图层项也可以切换可见性
+            layerItem.addEventListener('click', () => {
+                toggleLayerVisibility(layer.index); // 使用原始索引
+            });
+            
+            return layerItem;
+        }
+        
+        // 切换图层可见性
+        function toggleLayerVisibility(layerIndex) {
+            if (!aseRenderer) return;
+            
+            const newVisible = aseRenderer.toggleLayerVisibility(layerIndex);
+            
+            // 更新UI
+            updateLayerItemVisibility(layerIndex, newVisible);
+            
+            // 更新聊天预览
+            updateChatPreview();
+            
+            console.log(`🎨 图层 ${layerIndex} 可见性切换为: ${newVisible ? '可见' : '隐藏'}`);
+        }
+        
+        // 更新图层项可见性显示
+        function updateLayerItemVisibility(layerIndex, visible) {
+            const layerItem = layerList.querySelector(`[data-layer-index="${layerIndex}"]`);
+            if (!layerItem) {
+                console.warn(`⚠️ 未找到图层项: ${layerIndex}`);
+                return;
+            }
+            
+            const visibilityToggle = layerItem.querySelector('.layer-visibility-toggle');
+            
+            if (visible) {
+                layerItem.classList.remove('hidden');
+                visibilityToggle.classList.add('visible');
+            } else {
+                layerItem.classList.add('hidden');
+                visibilityToggle.classList.remove('visible');
+            }
+        }
+        
+        // 显示所有图层
+        function showAllLayers() {
+            if (!aseRenderer) return;
+            
+            aseRenderer.showAllLayers();
+            
+            // 更新UI
+            updateAllLayerItemsVisibility(true);
+            
+            // 更新聊天预览
+            updateChatPreview();
+            
+            console.log('🎨 显示所有图层');
+        }
+        
+        // 隐藏所有图层
+        function hideAllLayers() {
+            if (!aseRenderer) return;
+            
+            aseRenderer.hideAllLayers();
+            
+            // 更新UI
+            updateAllLayerItemsVisibility(false);
+            
+            // 更新聊天预览
+            updateChatPreview();
+            
+            console.log('🎨 隐藏所有图层');
+        }
+        
+        // 更新所有图层项的可见性显示
+        function updateAllLayerItemsVisibility(visible) {
+            const layerItems = layerList.querySelectorAll('.layer-item');
+            layerItems.forEach(layerItem => {
+                const visibilityToggle = layerItem.querySelector('.layer-visibility-toggle');
+                
+                if (visible) {
+                    layerItem.classList.remove('hidden');
+                    visibilityToggle.classList.add('visible');
+                } else {
+                    layerItem.classList.add('hidden');
+                    visibilityToggle.classList.remove('visible');
+                }
+            });
         }
         
         // 更新动画控制界面
@@ -1801,6 +2182,10 @@
         toggleAutoThemeBtn.addEventListener('click', toggleAutoTheme);
         themeIntervalInput.addEventListener('input', updateThemeInterval);
         themeIntervalInput.addEventListener('change', updateThemeInterval);
+        
+        // 添加图层控制事件监听器
+        showAllLayersBtn.addEventListener('click', showAllLayers);
+        hideAllLayersBtn.addEventListener('click', hideAllLayers);
         
         // 页面卸载时清理
         window.addEventListener('beforeunload', () => {

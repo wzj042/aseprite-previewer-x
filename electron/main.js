@@ -124,7 +124,12 @@ function parseAsepriteFile(filePath) {
         frames: processedFrames,
         width: aseFile.width,
         height: aseFile.height,
-        filename: path.basename(filePath)
+        filename: path.basename(filePath),
+        numFrames: aseFile.frames.length,
+        colorDepth: aseFile.colorDepth || 32,
+        pixelRatio: aseFile.pixelRatio || '1:1',
+        layers: aseFile.layers || [],
+        palette: aseFile.palette
       }
     };
   } catch (error) {
@@ -258,13 +263,15 @@ ipcMain.handle('open-file', async (event, filePath) => {
       // 启动文件监控
       await startFileWatching(filePath);
       
-      console.log('文件解析成功，帧数:', parseResult.data.frames.length);
-      return {
-        success: true,
-        message: '文件打开成功',
-        data: parseResult.data,
-        filePath: filePath
-      };
+    console.log('文件解析成功，帧数:', parseResult.data.frames.length);
+    console.log('📊 图层数据结构:', parseResult.data.layers);
+    
+    return {
+      success: true,
+      message: '文件打开成功',
+      data: parseResult.data,
+      filePath: filePath
+    };
     } else {
       console.error('文件解析失败:', parseResult.error);
       return {

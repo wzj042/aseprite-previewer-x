@@ -279,14 +279,18 @@ class AseReader {
         const opacity = this.readNextByte();
         this.skipBytes(3);
         const name = this.readNextString();
-        this.layers.push({
+        
+        const layerData = {
             flags,
             type,
             layerChildLevel,
             blendMode,
             opacity,
             name
-        });
+        };
+        
+        console.log('📊 读取图层:', layerData);
+        this.layers.push(layerData);
     }
     
     readCelChunk(chunkSize) {
@@ -394,6 +398,9 @@ class AseReader {
         for (let i = 0; i < numFrames; i++) {
             this.readFrame();
         }
+        
+        console.log('📊 解析完成 - 图层数量:', this.layers.length);
+        console.log('📊 图层列表:', this.layers);
     }
 }
 
