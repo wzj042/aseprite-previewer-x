@@ -359,6 +359,325 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
+        /* 深色模式CSS变量 */
+        :root {
+            --chat-bg-color: #EDEDED;
+            --chat-panel-color: #EDEDED;
+            --chat-selected-color: #FEFEFE;
+            --chat-text-color: #333;
+            --chat-border-color: #ccc;
+        }
+
+        [data-theme="dark"] {
+            --chat-bg-color: #121212;
+            --chat-panel-color: #171717;
+            --chat-selected-color: #242424;
+            --chat-text-color: #fff;
+            --chat-border-color: #333;
+        }
+
+        /* 全局主题过渡效果 */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* 为特定元素添加更细致的过渡效果 */
+        body {
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        .chat-interface {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .theme-toggle-btn {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .simple-btn {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input[type="number"] {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* 主题过渡动画类 */
+        .theme-transitioning {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        /* 确保所有使用CSS变量的元素都有过渡效果 */
+        [style*="var(--chat-"] {
+            transition: all 0.3s ease !important;
+        }
+
+        /* 聊天模式预览样式 */
+        .chat-preview {
+            margin-top: 20px;
+        }
+
+        .chat-interface {
+            background: var(--chat-bg-color);
+            border-radius: 15px;
+            padding: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+            /* box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); */
+            color: var(--chat-text-color);
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .chat-messages {
+            margin-bottom: 20px;
+            padding-top: 28px;
+            min-height: 200px;
+        }
+
+        .message-row {
+            display: flex;
+            margin-bottom: 15px;
+            align-items: flex-start;
+        }
+
+        .message-row.left-message {
+            justify-content: flex-start;
+        }
+
+        .message-row.right-message {
+            justify-content: flex-end;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #ddd;
+            margin: 0 8px;
+            flex-shrink: 0;
+        }
+
+        .message-bubble {
+            max-width: 60%;
+            padding: 0;
+            margin-top: 12px;
+            border-radius: 18px;
+            position: relative;
+        }
+
+        .right-bubble {
+            background: var(--chat-selected-color);
+            color: var(--chat-text-color);
+            border-bottom-right-radius: 4px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .message-content {
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+        }
+
+        .image-placeholder {
+            width: 128px;
+            height: 128px;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+        }
+
+        .image-placeholder canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+        }
+
+        .text-placeholder {
+            font-size: 14px;
+            color: inherit;
+        }
+
+        .chat-input-area {
+            margin-bottom: 15px;
+        }
+
+        .input-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--chat-panel-color);
+            border-radius: 25px;
+            padding: 12px 16px;
+            border: 1px solid var(--chat-border-color);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .input-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: transparent;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            margin: 0 4px;
+        }
+
+        .input-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .text-input-placeholder {
+            padding: 8px 12px;
+            color: var(--chat-text-color);
+            opacity: 0.6;
+            font-size: 14px;
+            border: none;
+            outline: none;
+            background: transparent;
+            text-align: center;
+            transition: color 0.3s ease;
+        }
+
+        .emoji-sticker-area {
+            background: var(--chat-panel-color);
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 64px;
+            border: 1px solid var(--chat-border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .emoji-toolbar {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .emoji-tab {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
+        }
+
+        .emoji-tab:hover {
+            /* background: var(--chat-selected-color); */
+        }
+
+        .emoji-tab.active {
+            /* background: var(--chat-selected-color); */
+            /* transform: scale(1.1); */
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .emoji-item {
+            width: 48px;
+            height: 48px;
+            /* background: var(--chat-bg-color);
+            border: 1px solid var(--chat-border-color); 
+            border-radius: 8px;*/
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .emoji-item:hover {
+            /* background: var(--chat-selected-color); */
+            transform: scale(1.05);
+        }
+
+        .emoji-item canvas {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 4px;
+        }
+
+        .mode-hint {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 12px;
+            color: var(--chat-text-color);
+            opacity: 0.6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: color 0.3s ease;
+        }
+
+        .theme-toggle-btn {
+            background: transparent;
+            border: 1px solid var(--chat-border-color);
+            border-radius: 20px;
+            padding: 6px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--chat-text-color);
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle-btn:hover {
+            background: var(--chat-selected-color);
+            border-color: var(--chat-text-color);
+        }
+
+        .theme-toggle-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            .chat-interface {
+                max-width: 100%;
+                padding: 15px;
+                aspect-ratio: 1 / 2;
+            }
+            
+            .image-placeholder {
+                width: 90px;
+                height: 90px;
+            }
+            
+            .emoji-item {
+                width: 60px;
+                height: 60px;
+            }   
+        }
+
     </style>
 </head>
 <body>
@@ -386,6 +705,7 @@
                 </div>
             </div>
             
+
             <div class="canvas-preview" id="canvasPreview" style="display: none;">
                 <h3>Canvas 渲染预览</h3>
                 <div class="canvas-container">
@@ -410,13 +730,76 @@
                     <!-- 自动翻转控制 -->
                     <div class="auto-flip-controls" id="autoFlipControls" style="margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <label for="flipInterval" style="font-size: 12px; color: #666;">翻转间隔:</label>
-                        <input type="number" id="flipInterval" min="0" max="10000" step="100" value="0" style="width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
+                        <input type="number" id="flipInterval" min="0" max="10000" step="100" value="1000" style="width: 80px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
                         <span style="font-size: 12px; color: #666;">ms</span>
                         <button class="simple-btn" id="toggleAutoFlipBtn" title="切换自动翻转" style="width: 30px; height: 30px;">
                             <span id="autoFlipIcon">⏸️</span>
                         </button>
                         <button class="simple-btn" id="flipBtn" title="水平翻转">
                             <span id="flipIcon">🔄</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 聊天模式预览 -->
+            <div class="chat-preview" id="chatPreview" style="display: none;">
+                <h3>聊天模式预览</h3>
+                <div class="chat-interface">
+                    <!-- 聊天消息区域 -->
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- 左侧消息（对方） -->
+                        <div class="message-row left-message">
+                            <div class="message-avatar"></div>
+                            <div class="message-bubble left-bubble">
+                                <div class="message-content">
+                                    <div class="image-placeholder" id="chatImageArea">
+                                        <!-- 这里将显示渲染的图片，尺寸约 128px -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    
+                    <!-- 表情/贴纸选择区域 -->
+                    <div class="emoji-sticker-area">
+                        <div class="emoji-toolbar">
+                            <button class="emoji-tab">🔍</button>
+                            <button class="emoji-tab">😊</button>
+                            <button class="emoji-tab active">❤️</button>
+                            <button class="emoji-tab">✌️</button>
+                        </div>
+                        <div class="emoji-grid">
+                            <div class="emoji-item" id="chatSelectionArea">
+                                <!-- 这里将显示选择区域的图片，尺寸约 48px -->
+                            </div>
+                            <div class="emoji-item">😀</div>
+                            <div class="emoji-item">😅</div>
+                            <div class="emoji-item">😄</div>
+                            <div class="emoji-item">😁</div>
+                            <div class="emoji-item">😆</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 底部模式切换提示 -->
+                    <div class="mode-hint">
+                        <span>——</span>
+                        <button class="theme-toggle-btn" id="themeToggleBtn">
+                            <span id="themeIcon">🌙</span>
+                            <span id="themeText">深色模式</span>
+                        </button>
+                        <span>——</span>
+                    </div>
+                    
+                    <!-- 自动主题切换控制 -->
+                    <div class="auto-theme-controls" id="autoThemeControls" style="margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <label for="themeInterval" style="font-size: 12px; color: var(--chat-text-color); opacity: 0.6; transition: color 0.3s ease;">主题间隔:</label>
+                        <input type="number" id="themeInterval" min="0" max="10000" step="100" value="3141" style="width: 80px; padding: 4px; border: 1px solid var(--chat-border-color); border-radius: 4px; font-size: 12px; background: var(--chat-panel-color); color: var(--chat-text-color); transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;">
+                        <span style="font-size: 12px; color: var(--chat-text-color); opacity: 0.6; transition: color 0.3s ease;">ms</span>
+                        <button class="simple-btn" id="toggleAutoThemeBtn" title="切换自动主题" style="width: 30px; height: 30px;">
+                            <span id="autoThemeIcon">⏸️</span>
                         </button>
                     </div>
                 </div>
@@ -446,6 +829,22 @@
         const aseCanvas = document.getElementById('aseCanvas');
         const frameInfo = document.getElementById('frameInfo');
         
+        // 聊天模式相关元素
+        const chatPreview = document.getElementById('chatPreview');
+        const chatImageArea = document.getElementById('chatImageArea');
+        const chatSelectionArea = document.getElementById('chatSelectionArea');
+        
+        // 主题切换相关元素
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const themeIcon = document.getElementById('themeIcon');
+        const themeText = document.getElementById('themeText');
+        
+        // 自动主题切换相关元素
+        const autoThemeControls = document.getElementById('autoThemeControls');
+        const themeIntervalInput = document.getElementById('themeInterval');
+        const toggleAutoThemeBtn = document.getElementById('toggleAutoThemeBtn');
+        const autoThemeIcon = document.getElementById('autoThemeIcon');
+        
         // 动画控制相关元素
         const animationControls = document.getElementById('animationControls');
         const playPauseBtn = document.getElementById('playPauseBtn');
@@ -467,6 +866,9 @@
         let currentFilePath = null;
         let aseRenderer = null;
         
+        // 主题状态
+        let isDarkMode = false;
+        
         // 动画控制状态
         let isPlaying = false;
         let animationInterval = null;
@@ -477,6 +879,11 @@
         let isAutoFlipEnabled = false;
         let autoFlipInterval = null;
         let flipIntervalMs = 1000; // 翻转间隔（毫秒）
+        
+        // 自动主题切换控制状态
+        let isAutoThemeEnabled = false;
+        let autoThemeInterval = null;
+        let themeIntervalMs = 3141; // 主题切换间隔（毫秒）
 
         // 检查是否在 Electron 环境中
         const isElectron = typeof window.electronAPI !== 'undefined';
@@ -508,6 +915,10 @@
                     console.log('🎨 更新 Canvas 渲染器数据');
                     aseRenderer.updateFileData(data.data);
                     updateFrameInfo();
+                    
+                    // 始终更新聊天预览
+                    updateChatPreview();
+                    
                     showStatus('Canvas 预览已更新', 'success');
                 } else {
                     // 回退到自动渲染
@@ -521,6 +932,10 @@
                 if (aseRenderer) {
                     console.log('🎨 执行强制刷新');
                     aseRenderer.forceRefresh();
+                    
+                    // 始终更新聊天预览
+                    updateChatPreview();
+                    
                     showStatus('强制刷新完成', 'success');
                 }
             });
@@ -571,6 +986,9 @@
             // 停止自动翻转
             stopAutoFlip();
             
+            // 停止自动主题切换
+            stopAutoTheme();
+            
             // 清理渲染器
             if (aseRenderer) {
                 aseRenderer = null;
@@ -579,6 +997,7 @@
             // 隐藏预览区域
             previewArea.style.display = 'none';
             canvasPreview.style.display = 'none';
+            chatPreview.style.display = 'none';
             fileInfo.style.display = 'none';
             animationControls.style.display = 'none';
             
@@ -591,6 +1010,9 @@
             isAutoFlipEnabled = false;
             autoFlipInterval = null;
             flipIntervalMs = 1000;
+            isAutoThemeEnabled = false;
+            autoThemeInterval = null;
+            themeIntervalMs = 3141;
         }
 
 
@@ -644,9 +1066,18 @@
             const fileInfo = aseRenderer.getFileInfo();
             displayCanvasFileInfo(fileInfo);
             
-            // 显示 Canvas 预览
+            // 显示两个预览模式
             canvasPreview.style.display = 'block';
-            renderedPreview.style.display = 'none';
+            chatPreview.style.display = 'block';
+            
+            // 确保没有其他预览显示
+            const renderedPreview = document.getElementById('renderedPreview');
+            if (renderedPreview) {
+                renderedPreview.style.display = 'none';
+            }
+            
+            // 初始化聊天预览
+            updateChatPreview();
             
             // Electron 环境下的文件监控由主进程处理
             if (isElectron && window.electronAPI) {
@@ -693,18 +1124,25 @@
             const fileInfo = aseRenderer.getFileInfo();
             displayCanvasFileInfo(fileInfo);
             
-            // 显示 Canvas 预览
+            // 显示两个预览模式
             canvasPreview.style.display = 'block';
+            chatPreview.style.display = 'block';
+            
             // 确保没有其他预览显示
             const renderedPreview = document.getElementById('renderedPreview');
             if (renderedPreview) {
                 renderedPreview.style.display = 'none';
             }
             
+            // 初始化聊天预览
+            updateChatPreview();
+            
             // 确保画布可见 - 延迟渲染确保 DOM 更新完成
             setTimeout(() => {
                 console.log('🔄 延迟渲染确保显示');
                 aseRenderer.renderFrame(0);
+                // 同时更新聊天预览
+                updateChatPreview();
             }, 100);
             
             // Electron 环境下的文件监控由主进程处理，不需要启动自动刷新
@@ -733,6 +1171,9 @@
                 
                 // 更新动画控制状态
                 updateAnimationControls(info);
+                
+                // 始终更新聊天预览
+                updateChatPreview();
             }
         }
         
@@ -852,6 +1293,9 @@
             // 更新翻转按钮图标
             flipIcon.textContent = isFlipped ? '↩️' : '🔄';
             
+            // 始终更新聊天预览
+            updateChatPreview();
+            
             console.log(`🔄 水平翻转切换: ${isFlipped ? '已翻转' : '正常'}`);
         }
         
@@ -927,6 +1371,254 @@
             }
         }
 
+        // 聊天模式预览功能
+        function updateChatPreview() {
+            if (!aseRenderer || !aseRenderer.aseData) {
+                console.warn('⚠️ 聊天模式预览失败: 渲染器或数据不可用');
+                return;
+            }
+
+            console.log('💬 更新聊天模式预览');
+            
+            // 创建图片区域的 Canvas（128px）
+            const imageCanvas = document.createElement('canvas');
+            imageCanvas.width = 128;
+            imageCanvas.height = 128;
+            const imageCtx = imageCanvas.getContext('2d');
+            
+            // 创建选择区域的 Canvas（48px）
+            const selectionCanvas = document.createElement('canvas');
+            selectionCanvas.width = 48;
+            selectionCanvas.height = 48;
+            const selectionCtx = selectionCanvas.getContext('2d');
+            
+            // 设置像素完美渲染
+            imageCtx.imageSmoothingEnabled = false;
+            selectionCtx.imageSmoothingEnabled = false;
+            
+            // 渲染当前帧到图片区域
+            renderFrameToCanvas(aseRenderer, imageCtx, 128, 128);
+            
+            // 渲染当前帧到选择区域
+            renderFrameToCanvas(aseRenderer, selectionCtx, 48, 48);
+            
+            // 更新聊天界面
+            updateChatImageArea(imageCanvas);
+            updateChatSelectionArea(selectionCanvas);
+            
+            console.log('✅ 聊天模式预览更新完成');
+        }
+        
+        // 渲染帧到指定 Canvas
+        function renderFrameToCanvas(renderer, ctx, targetWidth, targetHeight) {
+            if (!renderer || !renderer.aseData) return;
+            
+            const frame = renderer.aseData.frames[renderer.currentFrame];
+            if (!frame) return;
+            
+            // 计算缩放比例
+            const scaleX = targetWidth / renderer.aseData.width;
+            const scaleY = targetHeight / renderer.aseData.height;
+            const scale = Math.min(scaleX, scaleY);
+            
+            // 计算居中位置
+            const centerX = targetWidth / 2;
+            const centerY = targetHeight / 2;
+            const imageWidth = renderer.aseData.width * scale;
+            const imageHeight = renderer.aseData.height * scale;
+            
+            // 清除画布
+            ctx.clearRect(0, 0, targetWidth, targetHeight);
+            
+            // 设置变换
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.scale(scale, scale);
+            ctx.translate(-renderer.aseData.width / 2, -renderer.aseData.height / 2);
+            
+            // 如果启用水平翻转
+            if (renderer.isFlipped) {
+                ctx.scale(-1, 1);
+                ctx.translate(-renderer.aseData.width, 0);
+            }
+            
+            // 渲染所有可见的 Cel
+            const celLen = frame.cels.length;
+            for (let i = 0; i < celLen; i++) {
+                const celData = frame.cels[i];
+                const layerIndex = celData.layerIndex;
+                
+                if (renderer.isLayerVisible(layerIndex)) {
+                    renderCelToCanvas(renderer, ctx, frame, i);
+                }
+            }
+            
+            ctx.restore();
+        }
+        
+        // 渲染 Cel 到指定 Canvas
+        function renderCelToCanvas(renderer, ctx, frame, celIndex) {
+            const celData = frame.cels[celIndex];
+            const cel = celData.celType !== 1 ? celData : { 
+                ...renderer.getCelData(celData.linkedFrame, celIndex), 
+                ...celData 
+            };
+            
+            if (!cel.rawCelData || !cel.w || !cel.h) return;
+            
+            // 创建临时画布
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = cel.w;
+            tempCanvas.height = cel.h;
+            tempCtx.imageSmoothingEnabled = false;
+            
+            // 创建图像数据
+            const imageData = tempCtx.createImageData(cel.w, cel.h);
+            const colorDepth = renderer.aseData.colorDepth || 32;
+            
+            // 复制像素数据（简化版本，只处理32位）
+            if (colorDepth === 32) {
+                const expectedLength = cel.w * cel.h * 4;
+                const actualLength = cel.rawCelData.byteLength;
+                const copyLength = Math.min(expectedLength, actualLength);
+                
+                for (let i = 0; i < copyLength; i++) {
+                    imageData.data[i] = cel.rawCelData[i];
+                }
+            }
+            
+            tempCtx.putImageData(imageData, 0, 0);
+            ctx.drawImage(tempCanvas, cel.xpos, cel.ypos);
+        }
+        
+        // 更新聊天图片区域
+        function updateChatImageArea(canvas) {
+            // 清除现有内容
+            chatImageArea.innerHTML = '';
+            
+            // 添加新的 Canvas
+            chatImageArea.appendChild(canvas);
+            
+            console.log('🖼️ 聊天图片区域已更新');
+        }
+        
+        // 更新聊天选择区域
+        function updateChatSelectionArea(canvas) {
+            // 清除现有内容
+            chatSelectionArea.innerHTML = '';
+            
+            // 添加新的 Canvas
+            chatSelectionArea.appendChild(canvas);
+            
+            console.log('🎯 聊天选择区域已更新');
+        }
+        
+        // 切换主题模式
+        function toggleTheme() {
+            // 添加过渡类以确保平滑过渡
+            document.body.classList.add('theme-transitioning');
+            
+            isDarkMode = !isDarkMode;
+            
+            // 更新HTML属性
+            if (isDarkMode) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = '浅色模式';
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = '深色模式';
+            }
+            
+            // 过渡完成后移除过渡类
+            setTimeout(() => {
+                document.body.classList.remove('theme-transitioning');
+            }, 400);
+            
+            console.log(`🎨 主题已切换到: ${isDarkMode ? '深色' : '浅色'}模式`);
+        }
+        
+        // 初始化主题
+        function initTheme() {
+            // 默认使用浅色模式
+            isDarkMode = false;
+            document.documentElement.removeAttribute('data-theme');
+            themeIcon.textContent = '🌙';
+            themeText.textContent = '深色模式';
+            
+            console.log('🎨 主题已初始化为浅色模式');
+        }
+        
+        // 切换自动主题
+        function toggleAutoTheme() {
+            themeIntervalMs = parseInt(themeIntervalInput.value) || 0;
+            
+            if (themeIntervalMs <= 0) {
+                // 停止自动主题切换
+                stopAutoTheme();
+                return;
+            }
+            
+            if (isAutoThemeEnabled) {
+                // 停止自动主题切换
+                stopAutoTheme();
+            } else {
+                // 开始自动主题切换
+                startAutoTheme();
+            }
+        }
+        
+        // 开始自动主题切换
+        function startAutoTheme() {
+            if (themeIntervalMs <= 0) return;
+            
+            isAutoThemeEnabled = true;
+            autoThemeIcon.textContent = '⏸️';
+            toggleAutoThemeBtn.title = '停止自动主题切换';
+            
+            // 设置自动主题切换定时器
+            autoThemeInterval = setInterval(() => {
+                toggleTheme();
+            }, themeIntervalMs);
+            
+            console.log(`🎨 开始自动主题切换，间隔: ${themeIntervalMs}ms`);
+        }
+        
+        // 停止自动主题切换
+        function stopAutoTheme() {
+            isAutoThemeEnabled = false;
+            autoThemeIcon.textContent = '▶️';
+            toggleAutoThemeBtn.title = '开始自动主题切换';
+            
+            if (autoThemeInterval) {
+                clearInterval(autoThemeInterval);
+                autoThemeInterval = null;
+            }
+            
+            console.log('⏹️ 停止自动主题切换');
+        }
+        
+        // 更新主题切换间隔
+        function updateThemeInterval() {
+            const newInterval = parseInt(themeIntervalInput.value) || 0;
+            
+            if (newInterval !== themeIntervalMs) {
+                themeIntervalMs = newInterval;
+                
+                // 如果正在自动主题切换，重新启动以应用新间隔
+                if (isAutoThemeEnabled && themeIntervalMs > 0) {
+                    stopAutoTheme();
+                    startAutoTheme();
+                } else if (themeIntervalMs <= 0) {
+                    stopAutoTheme();
+                }
+                
+                console.log(`🎨 主题切换间隔更新为: ${themeIntervalMs}ms`);
+            }
+        }
+        
         // Electron 模式：打开本地文件
         async function openElectronFile(filePath) {
             try {
@@ -1102,10 +1794,19 @@
         flipIntervalInput.addEventListener('input', updateFlipInterval);
         flipIntervalInput.addEventListener('change', updateFlipInterval);
         
+        // 添加主题切换按钮事件监听器
+        themeToggleBtn.addEventListener('click', toggleTheme);
+        
+        // 添加自动主题切换控制事件监听器
+        toggleAutoThemeBtn.addEventListener('click', toggleAutoTheme);
+        themeIntervalInput.addEventListener('input', updateThemeInterval);
+        themeIntervalInput.addEventListener('change', updateThemeInterval);
+        
         // 页面卸载时清理
         window.addEventListener('beforeunload', () => {
             stopAnimation(); // 停止动画播放
             stopAutoFlip(); // 停止自动翻转
+            stopAutoTheme(); // 停止自动主题切换
             stopFileWatcher();
             cleanupPage();
         });
@@ -1114,6 +1815,9 @@
         // 延迟初始化，确保所有脚本都加载完成
         window.addEventListener('load', async () => {
             console.log('页面加载完成，开始初始化');
+            
+            // 初始化主题
+            initTheme();
             
             // 初始化 IPC 通信
             initElectronIPC();
