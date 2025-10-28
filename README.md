@@ -41,12 +41,12 @@
 
 ### 安装依赖
 ```bash
-npm install
+pnpm install
 ```
 
 ### 启动应用
 ```bash
-npm start
+npm run start
 ```
 
 ## 使用说明
@@ -68,14 +68,11 @@ npm start
 5. **实时预览**: 所有图层控制操作立即反映在预览中
 
 ### 交互控制
-- **鼠标滚轮**: 缩放图像
-- **鼠标拖拽**: 移动视图
-- **Shift + 点击**: 反向缩放
 - **动画控制**: 播放/暂停、上一帧/下一帧
 - **翻转控制**: 水平翻转图像
 - **主题切换**: 浅色/深色主题切换
 
 ## 依赖说明
-- `ase-parser` - Aseprite 文件解析
+- `ase-parser` -  Aseprite 文件解析（参考 [TheCyberRonin/ase-web-viewer](https://github.com/TheCyberRonin/ase-web-viewer)实现）
 - `express` - Web 服务器
 - `electron` - 桌面应用框架，提供 IPC 通信能力
